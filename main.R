@@ -111,19 +111,14 @@ updateBirdData <- function(fromDate = as.Date("2010-01-01")) {
 updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
   colnames <-
     c(
-      "timestamp",
-      "service",
-      "station_id",
-      "station_name",
-      "station_province",
-      "altitude",
-      "mean_temperature",
-      "min_temperature",
-      "max_temperature",
-      "precipitation",
-      "mean_wind_speed",
-      "insolation",
-      "geometry"
+      "indicativo",
+      "fecha",
+      "tmed",
+      "prec",
+      "velmedia",
+      "sol",
+      "longitud",
+      "latitud"
     )
   if (!file.exists("weather.csv")) {
     # create empty file and write headers
@@ -142,15 +137,13 @@ updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
   stations <- aemet_stations()
   # get stations from araba/alava, bizkaia and gipuzkoa
   stations <-
-    stations[stations$station_province %in% c('ARABA/ALAVA', 'BIZKAIA', 'GIPUZKOA'), ]
-  api_options <- aemet_options(
-    resolution = 'daily',
-    start_date = fromDate,
-    end_date = Sys.Date(),
-    station = stations$station_id,
-    api_key = key_get('aemet')
-  )
-  weatherData <- get_meteo_from('aemet', options = api_options)
+    stations[stations$provincia %in% c('ARABA/ALAVA', 'BIZKAIA', 'GIPUZKOA'), ]
+  # clean unnecessary columns for weather and stations
+  stations <- stations[, c('indicativo', 'longitud', 'latitud')]
+  weatherData <- aemet_daily_clim(start = fromDate)
+  weatherData <- weatherData[, c('fecha', 'tmed', 'prec', 'velmedia', 'sol', 'indicativo')]
+  # merge weather data with stations
+  weatherData <- merge(weatherData, stations, by = 'indicativo')
   write.table(
     weatherData,
     "weather.csv",
@@ -170,10 +163,3 @@ fromDateWeather <-
 
 updateBirdData(fromDateEbird)
 updateWeatherData(fromDateWeather)
-
-# list station codes for aemet
-aemet_api_key(key_get('aemet'))
-stations <- aemet_stations()
-# get stations from araba/alava, bizkaia and gipuzkoa
-stations <-
-  stations[stations$station_province %in% c('ARABA/ALAVA', 'BIZKAIA', 'GIPUZKOA'), ]
