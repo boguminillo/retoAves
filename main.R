@@ -1,11 +1,15 @@
+# https://cran.r-project.org/web/packages/meteospain/vignettes/aemet.html
 # store apy key in keyring
+# install.packages(c("keyring", "httr", "units", "sf", "meteospain"))
 library(keyring)
 # key_set(service = 'ebird')
-
+# key_set(service = 'aemet')
 library(httr)
+library(meteospain)
+
 
 # headers with the api key
-headers = c('X-eBirdApiToken' = key_get(service = "ebird"))
+# headers = c('X-eBirdApiToken' = key_get(service = "ebird"))
 
 # list of region codes for Spanish communities
 # res <- VERB("GET", url = "https://api.ebird.org/v2/ref/region/list/subnational1/ES", add_headers(headers))
@@ -16,9 +20,20 @@ headers = c('X-eBirdApiToken' = key_get(service = "ebird"))
 # res <-
 #   VERB("GET", url = "https://api.ebird.org/v2/data/obs/ES-PV/historic/2024/1/26", add_headers(headers))
 
+# list station codes for aemet
+# get_stations_info_from('aemet', api_options)
 
-# create function to get the species name
-updateData <- function() {
+getLastDate <- function() {
+  lastDate <- NULL
+  if (file.exists("ebird.csv")) {
+    # read last date from file
+    df <- read.csv("ebird.csv")
+    lastDate <- as.Date(tail(df$obsDt, 1))
+  }
+  return(lastDate)
+}
+
+updateBirdData <- function(fromDate = as.Date("2010-01-01") {
   library(jsonlite)
   colnames <-
     c(
@@ -37,9 +52,8 @@ updateData <- function() {
       "subId",
       "exoticCategory"
     )
-  lastDate <- as.Date("2010-01-01")
   if (!file.exists("ebird.csv")) {
-    # create empty file, write headers
+    # create empty file and write headers
     df <- data.frame(matrix(ncol = length(colnames), nrow = 0))
     colnames(df) <- colnames
     write.table(
@@ -49,19 +63,16 @@ updateData <- function() {
       row.names = FALSE,
       col.names = colnames
     )
-  } else {
-    # read last date from file
-    df <- read.csv("ebird.csv")
-    lastDate <- as.Date(tail(df$obsDt, 1)) + 1
   }
-  while (lastDate < Sys.Date()) {
+  headers = c('X-eBirdApiToken' = key_get(service = "ebird"))
+  while (fromDate < Sys.Date()) {
     # get data
     res <-
       VERB(
         "GET",
         url = paste0(
           "https://api.ebird.org/v2/data/obs/ES-PV/historic/",
-          gsub("-", "/", as.character(lastDate))
+          gsub("-", "/", as.character(fromDate))
         ),
         add_headers(headers)
       )
@@ -86,9 +97,46 @@ updateData <- function() {
         append = T
       )
     }
-    # increment date
-    lastDate <- lastDate + 1
+    fromDate <- fromDate + 1
   }
 }
 
-updateData()
+updateWeatherData <- function(fromDate = as.Date("2010-01-01"){
+  colnames <-
+    c(
+      # TODO: add column names
+    )
+  if (!file.exists("weather.csv")) {
+    # create empty file and write headers
+    df <- data.frame(matrix(ncol = length(colnames), nrow = 0))
+    colnames(df) <- colnames
+    write.table(
+      df,
+      "weather.csv",
+      sep = ",",
+      row.names = FALSE,
+      col.names = colnames
+    )
+  }
+  api_options <- aemet_options(
+    resolution = 'daily',
+    start_date = fromDate, end_date = Sys.Date() - 1,
+    # station = '8200', TODO: add station codes
+    api_key = key_get('aemet')
+  )
+  weatherData <- get_meteo_from('aemet', options = api_options)
+  write.table(
+    weatherData,
+    "weather.csv",
+    sep = ",",
+    row.names = FALSE,
+    col.names = !file.exists("weather.csv"),
+    append = T
+  )
+}
+
+lastDate <- getLastDate()
+fromDate <- as.Date(ifelse(is.null(lastDate), "2010-01-01", lastDate + 1))
+
+updateBirdData(fromDate)
+
