@@ -1,11 +1,11 @@
 # https://cran.r-project.org/web/packages/meteospain/vignettes/aemet.html
 # store apy key in keyring
-# install.packages(c("keyring", "httr", "units", "sf", "meteospain"))
+# install.packages(c("keyring", "httr", "climaemet"))
 library(keyring)
 # key_set(service = 'ebird')
 # key_set(service = 'aemet')
 library(httr)
-library(meteospain)
+library(climaemet)
 
 
 # headers with the api key
@@ -20,10 +20,7 @@ library(meteospain)
 # res <-
 #   VERB("GET", url = "https://api.ebird.org/v2/data/obs/ES-PV/historic/2024/1/26", add_headers(headers))
 
-# list station codes for aemet
-# get_stations_info_from('aemet', api_options)
-
-getLastDate <- function() {
+getLastDateEbird <- function() {
   lastDate <- NULL
   if (file.exists("ebird.csv")) {
     # read last date from file
@@ -33,7 +30,17 @@ getLastDate <- function() {
   return(lastDate)
 }
 
-updateBirdData <- function(fromDate = as.Date("2010-01-01") {
+getLastDateWeather <- function() {
+  lastDate <- NULL
+  if (file.exists("weather.csv")) {
+    # read last date from file
+    df <- read.csv("weather.csv")
+    lastDate <- as.Date(tail(df$fecha, 1))
+  }
+  return(lastDate)
+}
+
+updateBirdData <- function(fromDate = as.Date("2010-01-01")) {
   library(jsonlite)
   colnames <-
     c(
@@ -101,10 +108,22 @@ updateBirdData <- function(fromDate = as.Date("2010-01-01") {
   }
 }
 
-updateWeatherData <- function(fromDate = as.Date("2010-01-01"){
+updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
   colnames <-
     c(
-      # TODO: add column names
+      "timestamp",
+      "service",
+      "station_id",
+      "station_name",
+      "station_province",
+      "altitude",
+      "mean_temperature",
+      "min_temperature",
+      "max_temperature",
+      "precipitation",
+      "mean_wind_speed",
+      "insolation",
+      "geometry"
     )
   if (!file.exists("weather.csv")) {
     # create empty file and write headers
@@ -118,10 +137,17 @@ updateWeatherData <- function(fromDate = as.Date("2010-01-01"){
       col.names = colnames
     )
   }
+  # list station codes for aemet
+  aemet_api_key(key_get('aemet'))
+  stations <- aemet_stations()
+  # get stations from araba/alava, bizkaia and gipuzkoa
+  stations <-
+    stations[stations$station_province %in% c('ARABA/ALAVA', 'BIZKAIA', 'GIPUZKOA'), ]
   api_options <- aemet_options(
     resolution = 'daily',
-    start_date = fromDate, end_date = Sys.Date() - 1,
-    # station = '8200', TODO: add station codes
+    start_date = fromDate,
+    end_date = Sys.Date(),
+    station = stations$station_id,
     api_key = key_get('aemet')
   )
   weatherData <- get_meteo_from('aemet', options = api_options)
@@ -135,8 +161,19 @@ updateWeatherData <- function(fromDate = as.Date("2010-01-01"){
   )
 }
 
-lastDate <- getLastDate()
-fromDate <- as.Date(ifelse(is.null(lastDate), "2010-01-01", lastDate + 1))
+lastDateEbird <- getLastDateEbird()
+fromDateEbird <-
+  as.Date(ifelse(is.null(lastDateEbird), "2010-01-01", lastDateEbird + 1))
+lastDateWeather <- getLastDateWeather()
+fromDateWeather <-
+  as.Date(ifelse(is.null(lastDateWeather), "2010-01-01", lastDateWeather + 1))
 
-updateBirdData(fromDate)
+updateBirdData(fromDateEbird)
+updateWeatherData(fromDateWeather)
 
+# list station codes for aemet
+aemet_api_key(key_get('aemet'))
+stations <- aemet_stations()
+# get stations from araba/alava, bizkaia and gipuzkoa
+stations <-
+  stations[stations$station_province %in% c('ARABA/ALAVA', 'BIZKAIA', 'GIPUZKOA'), ]
