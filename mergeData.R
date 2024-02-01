@@ -2,12 +2,16 @@
 # install.packages("caret")
 library(geosphere)
 library(caret)
+library(readr)
 
-birdData <- read.csv("ebird.csv", header = TRUE, sep = ",")
-weatherData <- read.csv("weather.csv", header = TRUE, sep = ",")
+birdData <- read_csv("ebird.csv")
+weatherData <- read_csv("weather.csv")
+
+# Read coordinates as text
+options(digits = 12)
 
 # Remove unnecessary columns
-birdData <- birdData[, c("obsDt", "sciName", "howMany", "lat", "lng", "exoticCategory")]
+birdData <- birdData[, c("obsDt", "sciName", "howMany", "locName", "lat", "lng", "exoticCategory")]
 
 # Add numeric id to birdData to be able to clean duplicates after merge
 birdData$id <- 1:nrow(birdData)
@@ -33,7 +37,10 @@ birdData <- birdData[order(birdData$distance), ]
 birdData <- birdData[!duplicated(birdData$id), ]
 
 # Remove unnecessary columns
-birdData <- birdData[, c("obsDt", "sciName", "howMany", "lat", "lng", "exoticCategory", "tmed", "prec", "velmedia")]
+birdData <- birdData[, c("obsDt", "sciName", "howMany", "locName", "lat", "lng", "exoticCategory", "tmed", "prec", "velmedia")]
+
+weatherData$latitud <- as.character(weatherData$latitud)
+weatherData$longitud <- as.character(weatherData$longitud)
 
 # Divide dates into year, month and day as separate columns of integers
 birdData$year <- as.integer(format(birdData$obsDt, "%Y"))
