@@ -20,6 +20,9 @@ library(climaemet)
 # res <-
 #   VERB("GET", url = "https://api.ebird.org/v2/data/obs/ES-PV/historic/2024/1/26", add_headers(headers))
 
+# Documentation for aemet_daily_clim(...)
+# meta <- aemet_daily_clim(extract_metadata = TRUE)
+
 getLastDateEbird <- function() {
   lastDate <- NULL
   if (file.exists("ebird.csv")) {
@@ -116,7 +119,6 @@ updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
       "tmed",
       "prec",
       "velmedia",
-      "sol",
       "longitud",
       "latitud"
     )
@@ -141,7 +143,7 @@ updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
   # clean unnecessary columns for weather and stations
   stations <- stations[, c('indicativo', 'longitud', 'latitud')]
   weatherData <- aemet_daily_clim(start = fromDate)
-  weatherData <- weatherData[, c('fecha', 'tmed', 'prec', 'velmedia', 'sol', 'indicativo')]
+  weatherData <- weatherData[, c('fecha', 'tmed', 'prec', 'velmedia', 'indicativo')]
   # merge weather data with stations
   weatherData <- merge(weatherData, stations, by = 'indicativo')
   write.table(
