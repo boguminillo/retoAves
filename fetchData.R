@@ -113,15 +113,13 @@ updateBirdData <- function(fromDate = as.Date("2010-01-01")) {
 
 updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
   colnames <-
-    c(
-      "indicativo",
+    c("indicativo",
       "fecha",
       "tmed",
       "prec",
       "velmedia",
       "longitud",
-      "latitud"
-    )
+      "latitud")
   if (!file.exists("weather.csv")) {
     # create empty file and write headers
     df <- data.frame(matrix(ncol = length(colnames), nrow = 0))
@@ -139,11 +137,12 @@ updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
   stations <- aemet_stations()
   # get stations from araba/alava, bizkaia and gipuzkoa
   stations <-
-    stations[stations$provincia %in% c('ARABA/ALAVA', 'BIZKAIA', 'GIPUZKOA'), ]
+    stations[stations$provincia %in% c('ARABA/ALAVA', 'BIZKAIA', 'GIPUZKOA'),]
   # clean unnecessary columns for weather and stations
   stations <- stations[, c('indicativo', 'longitud', 'latitud')]
   weatherData <- aemet_daily_clim(start = fromDate)
-  weatherData <- weatherData[, c('fecha', 'tmed', 'prec', 'velmedia', 'indicativo')]
+  weatherData <-
+    weatherData[, c('fecha', 'tmed', 'prec', 'velmedia', 'indicativo')]
   # merge weather data with stations
   weatherData <- merge(weatherData, stations, by = 'indicativo')
   write.table(

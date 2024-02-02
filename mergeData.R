@@ -11,33 +11,51 @@ weatherData <- read_csv("weather.csv")
 options(digits = 12)
 
 # Remove unnecessary columns
-birdData <- birdData[, c("obsDt", "sciName", "howMany", "locName", "lat", "lng", "exoticCategory")]
+birdData <-
+  birdData[, c("obsDt",
+               "sciName",
+               "howMany",
+               "locName",
+               "lat",
+               "lng",
+               "exoticCategory")]
 
 # Add numeric id to birdData to be able to clean duplicates after merge
 birdData$id <- 1:nrow(birdData)
 
 # Remove rows with missing weather data
-weatherData <- weatherData[!is.na(weatherData$tmed), ]
+weatherData <- weatherData[!is.na(weatherData$tmed),]
 
 # Convert dates to Date format
 birdData$obsDt <- as.Date(birdData$obsDt)
 weatherData$fecha <- as.Date(weatherData$fecha)
 
 # Merge data, some birdData will be lost because weatherData is never up to date
-birdData <- merge(birdData, weatherData, by.x = "obsDt", by.y = "fecha")
+birdData <-
+  merge(birdData, weatherData, by.x = "obsDt", by.y = "fecha")
 
 # Add column with distance from observation point to weather station
-birdData$distance <- distHaversine(
-  cbind(birdData$lng, birdData$lat),
-  cbind(birdData$longitud, birdData$latitud)
-)
+birdData$distance <- distHaversine(cbind(birdData$lng, birdData$lat),
+                                   cbind(birdData$longitud, birdData$latitud))
 
 # For each id keep only the row with the minimum distance
-birdData <- birdData[order(birdData$distance), ]
-birdData <- birdData[!duplicated(birdData$id), ]
+birdData <- birdData[order(birdData$distance),]
+birdData <- birdData[!duplicated(birdData$id),]
 
 # Remove unnecessary columns
-birdData <- birdData[, c("obsDt", "sciName", "howMany", "locName", "lat", "lng", "exoticCategory", "tmed", "prec", "velmedia")]
+birdData <-
+  birdData[, c(
+    "obsDt",
+    "sciName",
+    "howMany",
+    "locName",
+    "lat",
+    "lng",
+    "exoticCategory",
+    "tmed",
+    "prec",
+    "velmedia"
+  )]
 
 weatherData$latitud <- as.character(weatherData$latitud)
 weatherData$longitud <- as.character(weatherData$longitud)
@@ -65,22 +83,8 @@ birdData$prec[birdData$prec == "Ip"] <- 0
 birdData$prec <- as.numeric(gsub(",", ".", birdData$prec))
 
 # Convert NA on velmedia to the median
-birdData$velmedia[is.na(birdData$velmedia)] <- median(birdData$velmedia, na.rm = TRUE)
-
-# Describe birdData
-summary(birdData)
+birdData$velmedia[is.na(birdData$velmedia)] <-
+  median(birdData$velmedia, na.rm = TRUE)
 
 # Save birdData
 write.csv(birdData, "birdData.csv", row.names = FALSE)
-
-# system.time({
-#   library(dplyr)
-#   birdDataDplyr <- birdData %>% group_by(id) %>% slice(which.min(distance))
-# })
-# 
-# system.time({
-#   birdDataSystem <- birdData[order(birdData$distance), ]
-#   birdDataSystem <- birdDataSystem[!duplicated(birdDataSystem$id), ]
-# })
-# birdDataSystem <- birdDataSystem[order(birdDataSystem$id), ]
-# all.equal(birdDataDplyr, birdDataSystem)
