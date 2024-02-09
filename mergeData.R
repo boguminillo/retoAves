@@ -57,9 +57,6 @@ birdData <-
     "velmedia"
   )]
 
-weatherData$latitud <- as.character(weatherData$latitud)
-weatherData$longitud <- as.character(weatherData$longitud)
-
 # Divide dates into year, month and day as separate columns of integers
 birdData$year <- as.integer(format(birdData$obsDt, "%Y"))
 birdData$month <- as.integer(format(birdData$obsDt, "%m"))
@@ -85,6 +82,9 @@ birdData$prec <- as.numeric(gsub(",", ".", birdData$prec))
 # Convert NA on velmedia to the median
 birdData$velmedia[is.na(birdData$velmedia)] <-
   median(birdData$velmedia, na.rm = TRUE)
+
+# search invisible characters in locName and remove them
+birdData$locName <- gsub("[^[:print:]]", " ", birdData$locName)
 
 # Save birdData
 write.csv(birdData, "birdData.csv", row.names = FALSE)
