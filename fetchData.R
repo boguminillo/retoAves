@@ -7,7 +7,6 @@ library(keyring)
 library(httr)
 library(climaemet)
 
-
 # headers with the api key
 # headers = c('X-eBirdApiToken' = key_get(service = "ebird"))
 
@@ -145,6 +144,8 @@ updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
     weatherData[, c('fecha', 'tmed', 'prec', 'velmedia', 'indicativo')]
   # merge weather data with stations
   weatherData <- merge(weatherData, stations, by = 'indicativo')
+  # order by date
+  weatherData <- weatherData[order(weatherData$fecha),]
   write.table(
     weatherData,
     "assets/data/weather.csv",
