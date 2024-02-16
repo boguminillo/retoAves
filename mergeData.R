@@ -4,8 +4,8 @@ library(geosphere)
 library(caret)
 library(readr)
 
-birdData <- read_csv("ebird.csv")
-weatherData <- read_csv("weather.csv")
+birdData <- read_csv("assets/data/ebird.csv")
+weatherData <- read_csv("assets/data/weather.csv")
 
 # Read coordinates as text
 options(digits = 12)
@@ -87,4 +87,4 @@ birdData$velmedia[is.na(birdData$velmedia)] <-
 birdData$locName <- gsub("[^[:print:]]", " ", birdData$locName)
 
 # Save birdData
-write.csv(birdData, "birdData.csv", row.names = FALSE)
+write.csv(birdData, "assets/data/birdData.csv", row.names = FALSE)

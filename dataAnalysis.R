@@ -1,4 +1,4 @@
-birdData <- read.csv("birdData.csv")
+birdData <- read.csv("assets/data/birdData.csv")
 
 summary(birdData)
 

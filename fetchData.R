@@ -25,9 +25,9 @@ library(climaemet)
 
 getLastDateEbird <- function() {
   lastDate <- NULL
-  if (file.exists("ebird.csv")) {
+  if (file.exists("assets/data/ebird.csv")) {
     # read last date from file
-    df <- read.csv("ebird.csv")
+    df <- read.csv("assets/data/ebird.csv")
     lastDate <- as.Date(tail(df$obsDt, 1))
   }
   return(lastDate)
@@ -35,9 +35,9 @@ getLastDateEbird <- function() {
 
 getLastDateWeather <- function() {
   lastDate <- NULL
-  if (file.exists("weather.csv")) {
+  if (file.exists("assets/data/weather.csv")) {
     # read last date from file
-    df <- read.csv("weather.csv")
+    df <- read.csv("assets/data/weather.csv")
     lastDate <- as.Date(tail(df$fecha, 1))
   }
   return(lastDate)
@@ -62,13 +62,13 @@ updateBirdData <- function(fromDate = as.Date("2010-01-01")) {
       "subId",
       "exoticCategory"
     )
-  if (!file.exists("ebird.csv")) {
+  if (!file.exists("assets/data/ebird.csv")) {
     # create empty file and write headers
     df <- data.frame(matrix(ncol = length(colnames), nrow = 0))
     colnames(df) <- colnames
     write.table(
       df,
-      "ebird.csv",
+      "assets/data/ebird.csv",
       sep = ",",
       row.names = FALSE,
       col.names = colnames
@@ -100,10 +100,10 @@ updateBirdData <- function(fromDate = as.Date("2010-01-01")) {
       # append to file
       write.table(
         dfTemp,
-        "ebird.csv",
+        "assets/data/ebird.csv",
         sep = ",",
         row.names = FALSE,
-        col.names = !file.exists("ebird.csv"),
+        col.names = !file.exists("assets/data/ebird.csv"),
         append = T
       )
     }
@@ -120,13 +120,13 @@ updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
       "velmedia",
       "longitud",
       "latitud")
-  if (!file.exists("weather.csv")) {
+  if (!file.exists("assets/data/weather.csv")) {
     # create empty file and write headers
     df <- data.frame(matrix(ncol = length(colnames), nrow = 0))
     colnames(df) <- colnames
     write.table(
       df,
-      "weather.csv",
+      "assets/data/weather.csv",
       sep = ",",
       row.names = FALSE,
       col.names = colnames
@@ -147,10 +147,10 @@ updateWeatherData <- function(fromDate = as.Date("2010-01-01")) {
   weatherData <- merge(weatherData, stations, by = 'indicativo')
   write.table(
     weatherData,
-    "weather.csv",
+    "assets/data/weather.csv",
     sep = ",",
     row.names = FALSE,
-    col.names = !file.exists("weather.csv"),
+    col.names = !file.exists("assets/data/weather.csv"),
     append = T
   )
 }
