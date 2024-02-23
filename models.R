@@ -1,70 +1,60 @@
-library(caret)
-
 birdData <- read.csv("assets/data/birdData.csv")
 
 # drop locName column
 birdData$locName <- NULL
 
-# get the 50 more common species and remove the rest
-species <- sort(table(birdData$sciName), decreasing = TRUE)[1:50]
-birdData <- birdData[birdData$sciName %in% names(species), ]
+# drop howMany column
+birdData$howMany <- NULL
 
-# transform the sciName column to a factor
-birdData$sciName <- as.factor(birdData$sciName)
+# drop the exoticCategory columns
+birdData$exoticCategoryN <- NULL
+birdData$exoticCategoryP <- NULL
+birdData$exoticCategoryX <- NULL
 
-# split the data into training and testing sets
-set.seed(123)
-trainingIndex <- createDataPartition(birdData$howMany, p = 0.8, list = FALSE)
-training <- birdData[trainingIndex, ]
-testing <- birdData[-trainingIndex, ]
+# drop the date columns
+birdData$year <- NULL
+birdData$month <- NULL
+birdData$day <- NULL
 
-# train a logistic regression model
-logisticModel <- glm(sciName ~ ., data = training, family = "poisson")
+# count the number of unique species
+length(unique(birdData$sciName))
 
-# test the model
-logisticPredictions <- predict(logisticModel, testing)
+# use the elbow method to find the optimal number of clusters
+wcss <- vector()
+for (i in 1:10) {
+  wcss[i] <- sum(kmeans(birdData[, -which(names(birdData) == "sciName")], i)$withinss)
+}
 
+plot(1:10, wcss, type = "b", xlab = "Number of clusters", ylab = "WCSS")
 
-# # drop the sciName column
-# birdData$sciName <- NULL
-# 
-# # drop the exoticCategory columns
-# birdData$exoticCategoryN <- NULL
-# birdData$exoticCategoryP <- NULL
-# birdData$exoticCategoryX <- NULL
-# 
-# # goup the data by date and cooridnates and sum the howMany column
-# birdData <- aggregate(howMany ~ ., birdData, sum)
-# 
-# # scale all the data except the howMany column
-# birdData[, -which(names(birdData) == "howMany")] <- scale(birdData[, -which(names(birdData) == "howMany")])
-# 
-# # split the data into training and testing sets
-# set.seed(123)
-# trainingIndex <- createDataPartition(birdData$howMany, p = 0.8, list = FALSE)
-# training <- birdData[trainingIndex, ]
-# testing <- birdData[-trainingIndex, ]
-# 
-# # train a linear regression model
-# lmModel <- train(howMany ~ ., data = training, method = "lm")
-# 
-# # test the model
-# lmPredictions <- predict(lmModel, testing)
-# 
-# # Mean Absolute Error
-# lmMae <- mean(abs(lmPredictions - testing$howMany))
-# 
-# # Root Mean Squared Error
-# lmRmse <- sqrt(mean((lmPredictions - testing$howMany)^2))
-# 
-# # train a decision tree model
-# treeModel <- train(howMany ~ ., data = training, method = "rpart")
-# 
-# # test the model
-# treePredictions <- predict(treeModel, testing)
-# 
-# # Mean Absolute Error
-# treeMae <- mean(abs(treePredictions - testing$howMany))
-# 
-# # Root Mean Squared Error
-# treeRmse <- sqrt(mean((treePredictions - testing$howMany)^2))
+# train a k-means model
+kmeansModel <- kmeans(birdData[, -which(names(birdData) == "sciName")], 5)
+
+# find what species are in each cluster
+speciesInCluster <- data.frame(sciName = birdData$sciName, cluster = kmeansModel$cluster)
+
+# remove duplicates
+speciesInCluster <- unique(speciesInCluster)
+
+# plot the clusters on a map
+# plot(birdData$lng, birdData$lat, col = kmeansModel$cluster, pch = 20, main = "Clusters of Bird Species", xlab = "Longitude", ylab = "Latitude")
+
+# plot a venn diagram of the species in each cluster
+library(VennDiagram)
+vennDiagram <- venn.diagram(
+  x = list(
+    speciesInCluster[speciesInCluster$cluster == 1, "sciName"],
+    speciesInCluster[speciesInCluster$cluster == 2, "sciName"],
+    speciesInCluster[speciesInCluster$cluster == 3, "sciName"],
+    speciesInCluster[speciesInCluster$cluster == 4, "sciName"],
+    speciesInCluster[speciesInCluster$cluster == 5, "sciName"]
+  ),
+  category.names = c("Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"),
+  filename = NULL
+)
+
+grid.draw(vennDiagram)
+
+# find how many times each species appears in each cluster
+speciesInCluster <- aggregate(sciName ~ cluster + sciName, speciesInCluster, length)
+
