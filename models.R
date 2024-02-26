@@ -4,7 +4,7 @@ birdData <- read.csv("assets/data/birdData.csv")
 birdData$locName <- NULL
 
 # drop howMany column
-birdData$howMany <- NULL
+# birdData$howMany <- NULL
 
 # drop the exoticCategory columns
 birdData$exoticCategoryN <- NULL
@@ -12,9 +12,12 @@ birdData$exoticCategoryP <- NULL
 birdData$exoticCategoryX <- NULL
 
 # drop the date columns
-birdData$year <- NULL
-birdData$month <- NULL
-birdData$day <- NULL
+# birdData$year <- NULL
+# birdData$month <- NULL
+# birdData$day <- NULL
+
+# scale data
+birdData[, -which(names(birdData) == "sciName")] <- scale(birdData[, -which(names(birdData) == "sciName")])
 
 # count the number of unique species
 length(unique(birdData$sciName))
@@ -37,9 +40,9 @@ speciesInCluster <- data.frame(sciName = birdData$sciName, cluster = kmeansModel
 speciesInCluster <- unique(speciesInCluster)
 
 # plot the clusters on a map
-# plot(birdData$lng, birdData$lat, col = kmeansModel$cluster, pch = 20, main = "Clusters of Bird Species", xlab = "Longitude", ylab = "Latitude")
+plot(birdData$lng, birdData$lat, col = kmeansModel$cluster, pch = 20, main = "Clusters of Bird Species", xlab = "Longitude", ylab = "Latitude")
 
-# plot a venn diagram of the species in each cluster
+# plot a venn diagram of the species in each cluster without logging the output
 library(VennDiagram)
 vennDiagram <- venn.diagram(
   x = list(
@@ -50,7 +53,8 @@ vennDiagram <- venn.diagram(
     speciesInCluster[speciesInCluster$cluster == 5, "sciName"]
   ),
   category.names = c("Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5"),
-  filename = NULL
+  filename = NULL,
+  disable.logging = TRUE
 )
 
 grid.draw(vennDiagram)
@@ -58,3 +62,38 @@ grid.draw(vennDiagram)
 # find how many times each species appears in each cluster
 speciesInCluster <- aggregate(sciName ~ cluster + sciName, speciesInCluster, length)
 
+# train a neural network
+library(neuralnet)
+
+birdData$sciName <- NULL
+
+# find outliers on howMany
+boxplot(birdData$howMany)
+
+# remove rows outliers
+birdData <- birdData[birdData$howMany < 5, ]
+
+neneuralNetModel <- neuralnet(
+  howMany ~ .,
+  data = birdData,
+  hidden = 4,
+  linear.output = TRUE
+)
+
+# test the neural network
+predictedValues <- compute(neneuralNetModel, birdData[, -which(names(birdData) == "howMany")])
+
+# root mean squared error
+sqrt(mean((predictedValues$net.result - birdData$howMany)^2))
+
+# plot the neural network
+plot(neneuralNetModel)
+
+# traing a linear regression model
+linearRegressionModel <- lm(howMany ~ ., data = birdData)
+
+# test the linear regression model
+predictedValues <- predict(linearRegressionModel, birdData[, -which(names(birdData) == "howMany")])
+
+# root mean squared error
+sqrt(mean((predictedValues - birdData$howMany)^2))
