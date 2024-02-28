@@ -11,13 +11,21 @@ birdData$exoticCategoryN <- NULL
 birdData$exoticCategoryP <- NULL
 birdData$exoticCategoryX <- NULL
 
+# drop lat, prec, velmedia, tmed, day and scriName columns
+birdData$lat <- NULL
+birdData$prec <- NULL
+birdData$velmedia <- NULL
+birdData$tmed <- NULL
+birdData$day <- NULL
+birdData$sciName <- NULL
+
 # drop the date columns
 # birdData$year <- NULL
 # birdData$month <- NULL
 # birdData$day <- NULL
 
 # scale data
-birdData[, -which(names(birdData) == "sciName")] <- scale(birdData[, -which(names(birdData) == "sciName")])
+birdData[, -which(names(birdData) == "howMany")] <- scale(birdData[, -which(names(birdData) == "howMany")])
 
 # count the number of unique species
 length(unique(birdData$sciName))
@@ -65,8 +73,6 @@ speciesInCluster <- aggregate(sciName ~ cluster + sciName, speciesInCluster, len
 # train a neural network
 library(neuralnet)
 
-birdData$sciName <- NULL
-
 # find outliers on howMany
 boxplot(birdData$howMany)
 
@@ -76,12 +82,15 @@ birdData <- birdData[birdData$howMany < 5, ]
 neneuralNetModel <- neuralnet(
   howMany ~ .,
   data = birdData,
-  hidden = 4,
+  hidden = 2,
   linear.output = TRUE
 )
 
 # test the neural network
 predictedValues <- compute(neneuralNetModel, birdData[, -which(names(birdData) == "howMany")])
+
+# mean absolute error
+mean(abs(predictedValues$net.result - birdData$howMany))
 
 # root mean squared error
 sqrt(mean((predictedValues$net.result - birdData$howMany)^2))
@@ -91,6 +100,9 @@ plot(neneuralNetModel)
 
 # traing a linear regression model
 linearRegressionModel <- lm(howMany ~ ., data = birdData)
+
+# summarize linear regression model
+summary(linearRegressionModel)
 
 # test the linear regression model
 predictedValues <- predict(linearRegressionModel, birdData[, -which(names(birdData) == "howMany")])

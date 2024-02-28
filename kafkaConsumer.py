@@ -9,7 +9,7 @@ spark = (SparkSession.builder.appName("KafkaConsumer")
 
 # Define the Kafka consumer
 df = (spark.readStream.format("kafka")
-      .option("kafka.bootstrap.servers", "10.22.82.181:9092")
+      .option("kafka.bootstrap.servers", "10.22.82.144:9092")
       .option("subscribe", "retoJulen")
       .load())
 

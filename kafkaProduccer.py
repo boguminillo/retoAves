@@ -33,9 +33,6 @@ df = df.select(to_json(struct("*")).alias("value"))
 
 # Write the DataFrame to the Kafka server
 df.write.format("kafka") \
-  .option("kafka.bootstrap.servers", "10.22.82.181:9092") \
+  .option("kafka.bootstrap.servers", "10.22.82.144:9092") \
   .option("topic", "retoJulen") \
   .save()
-
-# Stop the SparkSession
-# spark.stop()
