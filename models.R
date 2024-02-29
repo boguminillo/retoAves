@@ -19,6 +19,12 @@ birdData$tmed <- NULL
 birdData$day <- NULL
 birdData$sciName <- NULL
 
+# find outliers on howMany
+boxplot(birdData$howMany)
+
+# remove rows outliers
+birdData <- birdData[birdData$howMany < 5, ]
+
 # drop the date columns
 # birdData$year <- NULL
 # birdData$month <- NULL
@@ -70,42 +76,49 @@ grid.draw(vennDiagram)
 # find how many times each species appears in each cluster
 speciesInCluster <- aggregate(sciName ~ cluster + sciName, speciesInCluster, length)
 
+# cross validation
+library(caret)
+
+trainControl <- trainControl(
+  method = "cv",
+  number = 10
+)
+
+# train a linear regression model
+linearRegressionModel <- train(
+  howMany ~ .,
+  data = birdData,
+  method = "lm",
+  trControl = trainControl
+)
+
+# summarize linear regression model
+print(linearRegressionModel)
+
 # train a neural network
 library(neuralnet)
 
-# find outliers on howMany
-boxplot(birdData$howMany)
-
-# remove rows outliers
-birdData <- birdData[birdData$howMany < 5, ]
+# split the data into training and testing sets
+set.seed(123)
+trainingIndices <- createDataPartition(birdData$howMany, p = 0.8, list = FALSE)
+trainingData <- birdData[trainingIndices, ]
+testingData <- birdData[-trainingIndices, ]
 
 neneuralNetModel <- neuralnet(
   howMany ~ .,
-  data = birdData,
+  data = trainingData,
   hidden = 2,
   linear.output = TRUE
 )
 
 # test the neural network
-predictedValues <- compute(neneuralNetModel, birdData[, -which(names(birdData) == "howMany")])
+predictedValues <- compute(neneuralNetModel, testingData[, -which(names(testingData) == "howMany")])
 
 # mean absolute error
-mean(abs(predictedValues$net.result - birdData$howMany))
+mean(abs(predictedValues$net.result - testingData$howMany))
 
 # root mean squared error
-sqrt(mean((predictedValues$net.result - birdData$howMany)^2))
+sqrt(mean((predictedValues$net.result - testingData$howMany)^2))
 
 # plot the neural network
 plot(neneuralNetModel)
-
-# traing a linear regression model
-linearRegressionModel <- lm(howMany ~ ., data = birdData)
-
-# summarize linear regression model
-summary(linearRegressionModel)
-
-# test the linear regression model
-predictedValues <- predict(linearRegressionModel, birdData[, -which(names(birdData) == "howMany")])
-
-# root mean squared error
-sqrt(mean((predictedValues - birdData$howMany)^2))
